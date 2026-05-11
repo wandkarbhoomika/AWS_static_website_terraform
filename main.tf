@@ -1,13 +1,13 @@
 provider "aws" {
-  region = "ap-south-1"
+  region = var.aws_region
 }
 
 resource "aws_s3_bucket" "website_bucket" {
-  bucket = "bhoomika-amazon-site-20251117"
+  bucket = var.bucket_name
 
   tags = {
     Name        = "Amazon Clone Website"
-    Environment = "Dev"
+    Environment = var.environment
   }
 }
 
@@ -37,6 +37,7 @@ resource "aws_s3_object" "index" {
   key          = "index.html"
   source       = "index.html"
   content_type = "text/html"
+  etag         = filemd5("index.html")
 }
 
 resource "aws_s3_object" "error" {
@@ -44,6 +45,7 @@ resource "aws_s3_object" "error" {
   key          = "error.html"
   source       = "error.html"
   content_type = "text/html"
+  etag         = filemd5("error.html")
 }
 
 resource "aws_s3_object" "style" {
@@ -51,20 +53,23 @@ resource "aws_s3_object" "style" {
   key          = "style.css"
   source       = "style.css"
   content_type = "text/css"
+  etag         = filemd5("style.css")
 }
 
 resource "aws_s3_bucket_policy" "public_read" {
   bucket = aws_s3_bucket.website_bucket.id
 
+  depends_on = [aws_s3_bucket_public_access_block.public_access]
+
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid = "PublicReadGetObject"
-        Effect = "Allow"
+        Sid       = "PublicReadGetObject"
+        Effect    = "Allow"
         Principal = "*"
-        Action = "s3:GetObject"
-        Resource = "${aws_s3_bucket.website_bucket.arn}/*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.website_bucket.arn}/*"
       }
     ]
   })
